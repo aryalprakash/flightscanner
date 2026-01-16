@@ -1,95 +1,28 @@
 /**
  * Amadeus Flight Offers API Service
  *
- * Handles authentication, fetching, and normalization of flight data
- * from the Amadeus Self-Service API (test environment).
+ * Handles fetching and normalization of flight data
+ * from the Amadeus Self-Service API.
  */
 
+import { api } from "@/api/clients/httpClient";
 import type {
   AmadeusFlightOffersResponse,
   AmadeusFlightOffer,
   AmadeusItinerary,
   AmadeusSegment,
   AmadeusDictionaries,
-  AmadeusAuthResponse,
   FlightSearchParams,
 } from "../types/amadeus";
 
 import type {
   FlightOffer,
   FlightSearchResult,
-  FlightSearchError,
   Itinerary,
   Segment,
   Duration,
   CabinClass,
 } from "../types/flightOffer";
-
-// ============================================
-// CONFIGURATION
-// ============================================
-
-const AMADEUS_BASE_URL =
-  import.meta.env.VITE_AMADEUS_BASE_URL || "https://test.api.amadeus.com"; // Test environment
-
-const AMADEUS_CLIENT_ID = import.meta.env.VITE_AMADEUS_CLIENT_ID;
-const AMADEUS_CLIENT_SECRET = import.meta.env.VITE_AMADEUS_CLIENT_SECRET;
-
-// ============================================
-// TOKEN MANAGEMENT
-// ============================================
-
-interface TokenCache {
-  accessToken: string | null;
-  expiresAt: number;
-}
-
-const tokenCache: TokenCache = {
-  accessToken: null,
-  expiresAt: 0,
-};
-
-/**
- * Fetches a new access token from Amadeus OAuth2 endpoint
- */
-async function getAccessToken(): Promise<string> {
-  // Return cached token if still valid (with 60s buffer)
-  if (tokenCache.accessToken && Date.now() < tokenCache.expiresAt - 60000) {
-    return tokenCache.accessToken;
-  }
-
-  if (!AMADEUS_CLIENT_ID || !AMADEUS_CLIENT_SECRET) {
-    throw createError("CONFIG_ERROR", "Amadeus API credentials not configured");
-  }
-
-  const response = await fetch(`${AMADEUS_BASE_URL}/v1/security/oauth2/token`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      grant_type: "client_credentials",
-      client_id: AMADEUS_CLIENT_ID,
-      client_secret: AMADEUS_CLIENT_SECRET,
-    }),
-  });
-
-  if (!response.ok) {
-    throw createError(
-      "AUTH_ERROR",
-      "Failed to authenticate with Amadeus API",
-      `Status: ${response.status}`
-    );
-  }
-
-  const data: AmadeusAuthResponse = await response.json();
-
-  // Cache the token
-  tokenCache.accessToken = data.access_token;
-  tokenCache.expiresAt = Date.now() + data.expires_in * 1000;
-
-  return data.access_token;
-}
 
 // ============================================
 // MAIN API FUNCTION
@@ -112,62 +45,24 @@ async function getAccessToken(): Promise<string> {
 export async function searchFlights(
   params: FlightSearchParams
 ): Promise<FlightSearchResult> {
-  const token = await getAccessToken();
+  const rawData = await api.get<AmadeusFlightOffersResponse>(
+    "/v2/shopping/flight-offers",
+    {
+      originLocationCode: params.originLocationCode,
+      destinationLocationCode: params.destinationLocationCode,
+      departureDate: params.departureDate,
+      adults: params.adults,
+      returnDate: params.returnDate,
+      children: params.children,
+      infants: params.infants,
+      travelClass: params.travelClass,
+      nonStop: params.nonStop,
+      currencyCode: params.currencyCode,
+      maxPrice: params.maxPrice,
+      max: params.max,
+    }
+  );
 
-  // Build query string
-  const queryParams = new URLSearchParams();
-  queryParams.set("originLocationCode", params.originLocationCode);
-  queryParams.set("destinationLocationCode", params.destinationLocationCode);
-  queryParams.set("departureDate", params.departureDate);
-  queryParams.set("adults", String(params.adults));
-
-  if (params.returnDate) {
-    queryParams.set("returnDate", params.returnDate);
-  }
-  if (params.children) {
-    queryParams.set("children", String(params.children));
-  }
-  if (params.infants) {
-    queryParams.set("infants", String(params.infants));
-  }
-  if (params.travelClass) {
-    queryParams.set("travelClass", params.travelClass);
-  }
-  if (params.nonStop !== undefined) {
-    queryParams.set("nonStop", String(params.nonStop));
-  }
-  if (params.currencyCode) {
-    queryParams.set("currencyCode", params.currencyCode);
-  }
-  if (params.maxPrice) {
-    queryParams.set("maxPrice", String(params.maxPrice));
-  }
-  if (params.max) {
-    queryParams.set("max", String(params.max));
-  }
-
-  const url = `${AMADEUS_BASE_URL}/v2/shopping/flight-offers?${queryParams}`;
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw createError(
-      "API_ERROR",
-      `Flight search failed with status ${response.status}`,
-      errorBody
-    );
-  }
-
-  const rawData: AmadeusFlightOffersResponse = await response.json();
-
-  // Normalize and return
   return normalizeFlightOffers(rawData, params);
 }
 
@@ -345,17 +240,6 @@ function formatTime(isoDateTime: string): string {
  */
 function formatDate(isoDateTime: string): string {
   return isoDateTime.split("T")[0];
-}
-
-/**
- * Create a standardized error object
- */
-function createError(
-  code: string,
-  message: string,
-  details?: string
-): FlightSearchError {
-  return { code, message, details };
 }
 
 // ============================================

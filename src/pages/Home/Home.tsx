@@ -4,14 +4,21 @@ import { Box, Container, Typography, Paper } from "@mui/material";
 import { FlightTakeoff } from "@mui/icons-material";
 
 import { SearchForm } from "@/components/forms/SearchForm";
+import { useLocationStore } from "@/store";
 import type { SearchFormValues } from "@/components/forms/SearchForm";
 
 export function Home() {
   const navigate = useNavigate();
   const [isSearching, setIsSearching] = useState(false);
+  const setSelectedLocations = useLocationStore(
+    (state) => state.setSelectedLocations
+  );
 
   const handleSearch = (values: SearchFormValues) => {
     setIsSearching(true);
+
+    // Save selected locations to store for prefilling on search page
+    setSelectedLocations(values.origin, values.destination);
 
     // Build search params for URL
     const params = new URLSearchParams({
@@ -22,6 +29,27 @@ export function Home() {
 
     if (values.returnDate) {
       params.set("returnDate", values.returnDate);
+    }
+
+    // Add trip type
+    if (values.tripType !== "round-trip") {
+      params.set("tripType", values.tripType);
+    }
+
+    // Add passenger params
+    if (values.passengers.adults !== 1) {
+      params.set("adults", values.passengers.adults.toString());
+    }
+    if (values.passengers.children > 0) {
+      params.set("children", values.passengers.children.toString());
+    }
+    if (values.passengers.infants > 0) {
+      params.set("infants", values.passengers.infants.toString());
+    }
+
+    // Add travel class
+    if (values.travelClass !== "ECONOMY") {
+      params.set("travelClass", values.travelClass);
     }
 
     // Navigate to search results page
@@ -70,6 +98,7 @@ export function Home() {
           elevation={0}
           sx={{
             p: { xs: 3, md: 4 },
+            pt: { xs: 2, md: 2 },
             borderRadius: 3,
             border: "1px solid",
             borderColor: "divider",

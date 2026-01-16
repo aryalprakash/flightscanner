@@ -47,8 +47,11 @@ export interface Segment {
 
 export interface FlightPoint {
   airportCode: string;
+  airportName?: string;
   cityCode: string;
+  cityName?: string;
   countryCode: string;
+  countryName?: string;
   terminal?: string;
   dateTime: string; // ISO 8601
   time: string; // HH:mm format
