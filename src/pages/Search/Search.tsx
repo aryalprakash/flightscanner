@@ -23,6 +23,7 @@ import {
   FlightCard,
   FlightFilters,
   FlightHighlights,
+  PriceTrendGraph,
 } from "@/components/flight";
 import { SearchForm } from "@/components/forms/SearchForm";
 import { useLocationStore } from "@/store";
@@ -43,16 +44,13 @@ export function Search() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  // Mobile filter drawer state
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
-  // Extract search params
   const origin = searchParams.get("origin");
   const destination = searchParams.get("destination");
   const departureDate = searchParams.get("departureDate");
   const returnDate = searchParams.get("returnDate");
 
-  // Extract additional params
   const tripType = (searchParams.get("tripType") as TripType) || "round-trip";
   const adults = parseInt(searchParams.get("adults") || "1", 10);
   const children = parseInt(searchParams.get("children") || "0", 10);
@@ -60,35 +58,27 @@ export function Search() {
   const travelClass =
     (searchParams.get("travelClass") as TravelClass) || "ECONOMY";
 
-  // Get setSelectedLocations for handleSearch
   const setSelectedLocations = useLocationStore(
     (state) => state.setSelectedLocations
   );
 
-  // State for prefetched locations
   const [originLocation, setOriginLocation] =
     useState<LocationSearchResult | null>(null);
   const [destinationLocation, setDestinationLocation] =
     useState<LocationSearchResult | null>(null);
   const [isLoadingLocations, setIsLoadingLocations] = useState(true);
 
-  // Fetch location data for prefilling the form
-  // First check cache/store, then fetch if needed
   useEffect(() => {
     const fetchLocations = async () => {
-      // Get current store state directly to avoid stale closures
       const storeState = useLocationStore.getState();
 
       let originResult: LocationSearchResult | null = null;
       let destResult: LocationSearchResult | null = null;
 
-      // Check if we have cached data from store that matches URL params
       if (origin) {
-        // First check if selectedOrigin matches
         if (storeState.selectedOrigin?.code === origin) {
           originResult = storeState.selectedOrigin;
         } else {
-          // Try to get from cache
           originResult = storeState.getLocation(origin);
           // If not in cache, fetch from API
           if (!originResult) {
@@ -98,24 +88,19 @@ export function Search() {
       }
 
       if (destination) {
-        // First check if selectedDestination matches
         if (storeState.selectedDestination?.code === destination) {
           destResult = storeState.selectedDestination;
         } else {
-          // Try to get from cache
           destResult = storeState.getLocation(destination);
-          // If not in cache, fetch from API
           if (!destResult) {
             destResult = await getLocationByCode(destination);
           }
         }
       }
 
-      // Update local state
       setOriginLocation(originResult);
       setDestinationLocation(destResult);
 
-      // Update store with fetched locations for future use
       if (originResult || destResult) {
         storeState.setSelectedLocations(originResult, destResult);
       }
@@ -125,9 +110,8 @@ export function Search() {
 
     setIsLoadingLocations(true);
     fetchLocations();
-  }, [origin, destination]); // Only depend on URL params
+  }, [origin, destination]);
 
-  // Build passenger count object
   const passengers: PassengerCount = useMemo(
     () => ({
       adults: Math.max(1, Math.min(9, adults)),
@@ -137,7 +121,6 @@ export function Search() {
     [adults, children, infants]
   );
 
-  // Build initial values for the form
   const initialFormValues = useMemo<Partial<SearchFormValues>>(
     () => ({
       tripType,
@@ -159,7 +142,6 @@ export function Search() {
     ]
   );
 
-  // Build search params object
   const flightSearchParams = useMemo<FlightSearchParams | null>(() => {
     if (!origin || !destination || !departureDate) {
       return null;
@@ -173,34 +155,28 @@ export function Search() {
       children: passengers.children > 0 ? passengers.children : undefined,
       infants: passengers.infants > 0 ? passengers.infants : undefined,
       travelClass: travelClass !== "ECONOMY" ? travelClass : undefined,
-      max: 20, // Limit results for demo
+      // max: 20,
     };
   }, [origin, destination, departureDate, returnDate, passengers, travelClass]);
 
-  // Use the flight search hook
   const { data, isLoading, isError, error, refetch } = useFlightSearch(
     flightSearchParams,
     { enabled: !!flightSearchParams }
   );
 
-  // Filtered offers state
   const [filteredOffers, setFilteredOffers] = useState<FlightOffer[] | null>(
     null
   );
 
-  // Handle filter changes
   const handleFilterChange = useCallback((filtered: FlightOffer[]) => {
     setFilteredOffers(filtered);
   }, []);
 
-  // Reset filtered offers when data changes
   const displayedOffers = filteredOffers ?? data?.offers ?? [];
 
-  // Handle search form submission
   const handleSearch = (values: SearchFormValues) => {
     if (!values.origin || !values.destination) return;
 
-    // Save selected locations to store for future use
     setSelectedLocations(values.origin, values.destination);
 
     const params = new URLSearchParams({
@@ -213,12 +189,10 @@ export function Search() {
       params.set("returnDate", values.returnDate);
     }
 
-    // Add trip type
     if (values.tripType !== "round-trip") {
       params.set("tripType", values.tripType);
     }
 
-    // Add passenger params
     if (values.passengers.adults !== 1) {
       params.set("adults", values.passengers.adults.toString());
     }
@@ -229,16 +203,13 @@ export function Search() {
       params.set("infants", values.passengers.infants.toString());
     }
 
-    // Add travel class
     if (values.travelClass !== "ECONOMY") {
       params.set("travelClass", values.travelClass);
     }
 
-    // Update URL with new search params
     setSearchParams(params);
   };
 
-  // Validate required params
   if (!origin || !destination || !departureDate) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -259,7 +230,6 @@ export function Search() {
   return (
     <Box sx={{ flex: 1, py: 3 }}>
       <Container maxWidth="lg">
-        {/* Brand Header */}
         <Box
           component={Link}
           to="/"
@@ -283,7 +253,6 @@ export function Search() {
           </Typography>
         </Box>
 
-        {/* Search Form */}
         <Paper sx={{ px: 3, pb: 4, pt: 1, mb: 3 }}>
           {isLoadingLocations ? (
             <Box sx={{ py: 3 }}>
@@ -304,7 +273,6 @@ export function Search() {
           )}
         </Paper>
 
-        {/* Mobile Filter Button */}
         {isMobile && data && data.offers.length > 0 && (
           <Box sx={{ mb: 2 }}>
             <Button
@@ -333,7 +301,6 @@ export function Search() {
           </Box>
         )}
 
-        {/* Mobile Filter Drawer */}
         <Drawer
           anchor="bottom"
           open={filterDrawerOpen}
@@ -347,7 +314,6 @@ export function Search() {
           }}
         >
           <Box sx={{ p: 2 }}>
-            {/* Drawer Header */}
             <Stack
               direction="row"
               justifyContent="space-between"
@@ -365,7 +331,6 @@ export function Search() {
               </IconButton>
             </Stack>
 
-            {/* Filters Content */}
             {data && (
               <FlightFilters
                 offers={data.offers}
@@ -375,7 +340,6 @@ export function Search() {
               />
             )}
 
-            {/* Apply Button */}
             <Button
               fullWidth
               variant="contained"
@@ -387,7 +351,6 @@ export function Search() {
           </Box>
         </Drawer>
 
-        {/* Loading State */}
         {isLoading && (
           <Box>
             {[1, 2, 3].map((i) => (
@@ -418,7 +381,6 @@ export function Search() {
           </Box>
         )}
 
-        {/* Error State */}
         {isError && (
           <Alert
             severity="error"
@@ -440,7 +402,6 @@ export function Search() {
           </Alert>
         )}
 
-        {/* Results with Filters */}
         {data && !isLoading && (
           <>
             {data.offers.length === 0 ? (
@@ -451,7 +412,6 @@ export function Search() {
               </Paper>
             ) : (
               <Grid container spacing={3}>
-                {/* Filters Sidebar */}
                 <Grid
                   item
                   xs={12}
@@ -468,7 +428,6 @@ export function Search() {
                   </Box>
                 </Grid>
 
-                {/* Flight Results */}
                 <Grid item xs={12} md={9}>
                   {displayedOffers.length === 0 ? (
                     <Paper sx={{ p: 4, textAlign: "center" }}>
@@ -479,7 +438,6 @@ export function Search() {
                     </Paper>
                   ) : (
                     <>
-                      {/* Highlighted Options - Best, Cheapest, Fastest */}
                       <FlightHighlights
                         offers={displayedOffers}
                         onSelect={(offer) => {
@@ -500,6 +458,11 @@ export function Search() {
                             }, 2000);
                           }
                         }}
+                      />
+                      <PriceTrendGraph
+                        offers={displayedOffers}
+                        currency={displayedOffers[0]?.price?.currency || "USD"}
+                        selectedDate={departureDate}
                       />
                       {displayedOffers.map((offer) => (
                         <FlightCard

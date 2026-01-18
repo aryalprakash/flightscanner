@@ -1,10 +1,3 @@
-/**
- * SearchForm Component
- *
- * A responsive, accessible flight search form built with Material UI.
- * Supports origin/destination autocomplete with Amadeus API, date selection, and validation.
- */
-
 import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Box,
@@ -52,22 +45,12 @@ import type {
 import { TRIP_TYPE_OPTIONS, TRAVEL_CLASS_OPTIONS } from "./SearchForm.types";
 import { CustomDateField } from "./CustomDateField";
 
-// ============================================
-// TYPES
-// ============================================
-
-// Extended type for autocomplete options (includes nested airports)
 type AutocompleteOption = LocationSearchResult & {
   isNested?: boolean;
   parentCity?: string;
 };
 
-// Date range type for round-trip
 type DateRange = [Date | null, Date | null];
-
-// ============================================
-// HELPERS
-// ============================================
 
 const getMinDate = () => {
   return startOfDay(new Date());
@@ -121,10 +104,6 @@ function getPassengerSummary(passengers: PassengerCount): string {
   return parts.join(", ") || "1 Adult";
 }
 
-// ============================================
-// VALIDATION
-// ============================================
-
 function validateForm(values: SearchFormValues): SearchFormValidation {
   const errors: SearchFormValidation["errors"] = {};
   const today = formatDateToString(getMinDate());
@@ -156,10 +135,6 @@ function validateForm(values: SearchFormValues): SearchFormValidation {
     errors,
   };
 }
-
-// ============================================
-// PASSENGER SELECTOR COMPONENT
-// ============================================
 
 interface PassengerSelectorProps {
   value: PassengerCount;
@@ -205,7 +180,7 @@ function PassengerSelector({
         size="small"
         sx={{
           textTransform: "none",
-          color: "text.primary",
+          color: "text.secondary",
           minWidth: "auto",
           whiteSpace: "nowrap",
           fontSize: "0.875rem",
@@ -341,10 +316,6 @@ function PassengerSelector({
   );
 }
 
-// ============================================
-// MAIN COMPONENT
-// ============================================
-
 export function SearchForm({
   onSubmit,
   isLoading = false,
@@ -352,16 +323,13 @@ export function SearchForm({
 }: SearchFormProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  // Medium screen: 900-1200px (between md and lg)
   const isMediumScreen = useMediaQuery(
     "(min-width: 900px) and (max-width: 1200px)"
   );
 
-  // Default dates: today for departure, tomorrow for return
   const today = getMinDate();
   const tomorrow = addDays(today, 1);
 
-  // Form state with new fields
   const [values, setValues] = useState<SearchFormValues>({
     tripType: initialValues?.tripType ?? "round-trip",
     origin: initialValues?.origin ?? null,
@@ -376,7 +344,6 @@ export function SearchForm({
     travelClass: initialValues?.travelClass ?? "ECONOMY",
   });
 
-  // Date state for MUI X date pickers (using Date objects internally)
   const [departureDate, setDepartureDate] = useState<Date | null>(
     initialValues?.departureDate
       ? parseDateFromString(initialValues.departureDate)
@@ -400,10 +367,8 @@ export function SearchForm({
     debounceMs: 300,
   });
 
-  // Include current value in options if not already present (for pre-filled values)
   const originOptions = useMemo(() => {
     const searchOptions = flattenOptions(originSearch.data);
-    // If we have a selected value and it's not in the search results, add it
     if (
       values.origin &&
       !searchOptions.some((opt) => opt.code === values.origin?.code)
@@ -415,7 +380,6 @@ export function SearchForm({
 
   const destinationOptions = useMemo(() => {
     const searchOptions = flattenOptions(destinationSearch.data);
-    // If we have a selected value and it's not in the search results, add it
     if (
       values.destination &&
       !searchOptions.some((opt) => opt.code === values.destination?.code)
@@ -425,7 +389,6 @@ export function SearchForm({
     return searchOptions;
   }, [destinationSearch.data, values.destination]);
 
-  // Sync form state when initialValues change (e.g., when location data is fetched)
   useEffect(() => {
     if (initialValues) {
       setValues((prev) => ({
@@ -438,7 +401,6 @@ export function SearchForm({
         travelClass: initialValues.travelClass ?? prev.travelClass,
       }));
 
-      // Also sync date states
       if (initialValues.departureDate) {
         const depDate = parseDateFromString(initialValues.departureDate);
         setDepartureDate(depDate);
@@ -482,7 +444,6 @@ export function SearchForm({
     }));
   }, []);
 
-  // Handle departure date change for one-way trips
   const handleDepartureDateChange = useCallback((date: Date | null) => {
     setDepartureDate(date);
     setValues((prev) => ({
@@ -491,7 +452,6 @@ export function SearchForm({
     }));
   }, []);
 
-  // Handle date range change for round-trip
   const handleDateRangeChange = useCallback((newRange: DateRange) => {
     setDateRange(newRange);
     setValues((prev) => ({
@@ -501,17 +461,14 @@ export function SearchForm({
     }));
   }, []);
 
-  // Handle trip type change
   const handleTripTypeChange = useCallback(
     (newTripType: TripType) => {
       setValues((prev) => ({
         ...prev,
         tripType: newTripType,
-        // Clear return date when switching to one-way
         returnDate: newTripType === "one-way" ? "" : prev.returnDate,
       }));
 
-      // Sync date states when switching trip types
       if (newTripType === "one-way") {
         setDepartureDate(dateRange[0]);
       } else {
@@ -610,7 +567,6 @@ export function SearchForm({
       aria-label="Flight search form"
       sx={{ width: "100%", mx: "auto" }}
     >
-      {/* Options Row - Trip Type, Passengers, Class */}
       <Stack
         direction="row"
         spacing={0.5}
@@ -618,7 +574,6 @@ export function SearchForm({
         flexWrap="wrap"
         alignItems="center"
       >
-        {/* Trip Type */}
         <FormControl size="small" variant="standard">
           <Select
             value={values.tripType}
@@ -647,7 +602,6 @@ export function SearchForm({
           </Select>
         </FormControl>
 
-        {/* Passengers */}
         <PassengerSelector
           value={values.passengers}
           onChange={(passengers) =>
@@ -656,7 +610,6 @@ export function SearchForm({
           disabled={isLoading}
         />
 
-        {/* Travel Class */}
         <FormControl size="small" variant="standard">
           <Select
             value={values.travelClass}
@@ -691,15 +644,10 @@ export function SearchForm({
         </FormControl>
       </Stack>
 
-      {/* Main Search Fields */}
-      {/* Large screens (>1200px): all on one row */}
-      {/* Medium screens (900-1200px): two rows */}
-      {/* Mobile (<900px): stacked vertically */}
       <Stack spacing={isMobile || isMediumScreen ? 2 : 0}>
-        {/* Row 1: Origin & Destination (+ dates/search on large screens) */}
         <Stack
           direction={isMobile ? "column" : "row"}
-          spacing={isMobile ? 2 : 1}
+          spacing={1}
           alignItems={isMobile ? "stretch" : "center"}
         >
           {/* Origin */}
@@ -727,8 +675,8 @@ export function SearchForm({
               minWidth: { xs: "100%", md: 200 },
               position: "relative",
               "& .MuiFormHelperText-root": {
-                position: "absolute",
-                bottom: -20,
+                position: { md: "relative", lg: "absolute" },
+                bottom: { md: 0, lg: -20 },
                 left: 0,
                 margin: 0,
               },
@@ -809,8 +757,8 @@ export function SearchForm({
               minWidth: { xs: "100%", md: 200 },
               position: "relative",
               "& .MuiFormHelperText-root": {
-                position: "absolute",
-                bottom: -20,
+                position: { md: " relative", lg: "absolute" },
+                bottom: { md: 0, lg: -20 },
                 left: 0,
                 margin: 0,
               },
@@ -852,7 +800,6 @@ export function SearchForm({
             )}
           />
 
-          {/* Large screen only: Date fields and search button on same row */}
           {!isMobile && !isMediumScreen && (
             <>
               {values.tripType === "one-way" && (
@@ -931,7 +878,6 @@ export function SearchForm({
           )}
         </Stack>
 
-        {/* Row 2: Date Fields + Search Button (mobile and medium screens only) */}
         {(isMobile || isMediumScreen) && (
           <Stack
             direction={isMobile ? "column" : "row"}

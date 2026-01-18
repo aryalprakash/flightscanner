@@ -9,7 +9,6 @@ import {
   useTheme,
 } from "@mui/material";
 import {
-  EmojiEvents as BestIcon,
   AttachMoney as CheapestIcon,
   Speed as FastestIcon,
 } from "@mui/icons-material";
@@ -47,11 +46,6 @@ export function FlightHighlights({ offers, onSelect }: FlightHighlightsProps) {
       return totalMinutes / offer.itineraries.length;
     };
 
-    // Helper: Get total stops across all itineraries
-    const getTotalStops = (offer: FlightOffer) => {
-      return offer.itineraries.reduce((sum, it) => sum + it.stops, 0);
-    };
-
     // Helper: Format average duration
     const formatAverageDuration = (offer: FlightOffer) => {
       const avgMinutes = getAverageDuration(offer);
@@ -70,46 +64,11 @@ export function FlightHighlights({ offers, onSelect }: FlightHighlightsProps) {
       return getAverageDuration(a) - getAverageDuration(b);
     })[0];
 
-    // Find best route:
-    // - Non-stop or fewer stops
-    // - Price not more than 40% higher than cheapest
-    const maxBestPrice = cheapest.price.total * 1.9; // 40% more than cheapest
-
-    const bestCandidates = offers
-      .filter((offer) => offer.price.total <= maxBestPrice)
-      .sort((a, b) => {
-        // First sort by stops (fewer is better)
-        const aStops = getTotalStops(a);
-        const bStops = getTotalStops(b);
-        if (aStops !== bStops) return aStops - bStops;
-        // Then by price (lower is better)
-        return a.price.total - b.price.total;
-      });
-
-    // Best is the one with fewest stops within 40% price range
-    const best = bestCandidates.length > 0 ? bestCandidates[0] : null;
-
-    // If cheapest and fastest are the same, don't show highlights at all
     if (fastest.id === cheapest.id) {
       return [];
     }
 
     const result: HighlightedFlight[] = [];
-
-    // Add best - only if it exists and is different from both cheapest and fastest
-    if (best && best.id !== cheapest.id && best.id !== fastest.id) {
-      const stops = getTotalStops(best);
-      const stopsLabel =
-        stops === 0 ? "Non-stop" : `${stops} stop${stops > 1 ? "s" : ""}`;
-      result.push({
-        type: "best",
-        label: "Best",
-        offer: best,
-        icon: <BestIcon />,
-        color: theme.palette.warning.main,
-        description: `${formatAverageDuration(best)} · ${stopsLabel}`,
-      });
-    }
 
     // Add cheapest
     result.push({
@@ -158,7 +117,7 @@ export function FlightHighlights({ offers, onSelect }: FlightHighlightsProps) {
             onClick={() => onSelect?.(highlight.offer, highlight.type)}
             sx={{
               flex: 1,
-              p: 2,
+              p: { xs: 1, sm: 1, md: 2 },
               cursor: onSelect ? "pointer" : "default",
               border: `2px solid ${alpha(highlight.color, 0.3)}`,
               background: alpha(highlight.color, 0.04),
@@ -174,7 +133,6 @@ export function FlightHighlights({ offers, onSelect }: FlightHighlightsProps) {
             }}
           >
             <Stack direction="row" alignItems="center" spacing={1.5}>
-              {/* Icon and Label */}
               <Box
                 sx={{
                   display: "flex",
@@ -190,7 +148,6 @@ export function FlightHighlights({ offers, onSelect }: FlightHighlightsProps) {
                 {highlight.icon}
               </Box>
 
-              {/* Info */}
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Stack direction="row" alignItems="center" spacing={1}>
                   <Chip
@@ -220,7 +177,6 @@ export function FlightHighlights({ offers, onSelect }: FlightHighlightsProps) {
                 </Typography>
               </Box>
 
-              {/* Price */}
               <Box sx={{ textAlign: "right" }}>
                 <Typography
                   variant="h6"

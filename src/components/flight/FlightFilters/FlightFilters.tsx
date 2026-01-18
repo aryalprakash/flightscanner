@@ -180,12 +180,7 @@ function FilterSection({
 // MAIN COMPONENT
 // ============================================
 
-export function FlightFilters({
-  offers,
-  onFilterChange,
-  filteredCount,
-  totalCount,
-}: FlightFiltersProps) {
+export function FlightFilters({ offers, onFilterChange }: FlightFiltersProps) {
   // Calculate available filter options from offers
   const filterOptions = useMemo(() => {
     if (!offers.length) {
