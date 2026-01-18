@@ -490,7 +490,6 @@ export function Search() {
                       <FlightHighlights
                         offers={allOffers}
                         onSelect={(offer) => {
-                          console.log("Selected highlighted offer:", offer);
                           // Scroll to the flight card or highlight it
                           const element = document.getElementById(
                             `flight-${offer.id}`
@@ -517,8 +516,7 @@ export function Search() {
                         <FlightCard
                           key={offer.id}
                           offer={offer}
-                          onSelect={(selectedOffer) => {
-                            console.log("Selected offer:", selectedOffer);
+                          onSelect={() => {
                             // TODO: Navigate to booking page
                           }}
                         />
