@@ -514,13 +514,16 @@ export function SearchForm({
   ) => {
     const isCity = option.type === "CITY";
     return (
-      <li
+      <Box
+        component="li"
         {...props}
         key={option.id}
-        style={{
-          ...props.style,
-          paddingLeft: option.isNested ? 32 : 16,
+        sx={{
+          pl: option.isNested ? 4 : 2,
           backgroundColor: option.isNested ? "rgba(0,0,0,0.02)" : undefined,
+          "&:hover .airport-name, &.Mui-focused .airport-name": {
+            color: "text.primary",
+          },
         }}
       >
         <Box
@@ -540,6 +543,7 @@ export function SearchForm({
               {option.code}
             </Typography>
             <Typography
+              className="airport-name"
               variant="body2"
               color="text.secondary"
               component="span"
@@ -553,7 +557,7 @@ export function SearchForm({
             </Typography>
           </Box>
         </Box>
-      </li>
+      </Box>
     );
   };
 
@@ -682,7 +686,7 @@ export function SearchForm({
               },
             }}
             slotProps={{
-              paper: { sx: { minWidth: 450, maxWidth: 500 } },
+              paper: { sx: { width: { md: 450 } } },
               popper: { sx: { minWidth: 450 }, placement: "bottom-start" },
             }}
             renderOption={(props, option) => renderOption(props, option)}
@@ -764,7 +768,7 @@ export function SearchForm({
               },
             }}
             slotProps={{
-              paper: { sx: { minWidth: 450, maxWidth: 500 } },
+              paper: { sx: { width: { md: 450 } } },
               popper: { sx: { minWidth: 450 }, placement: "bottom-start" },
             }}
             renderOption={(props, option) => renderOption(props, option)}
