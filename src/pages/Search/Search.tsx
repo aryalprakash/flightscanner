@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import {
   Box,
@@ -15,6 +15,7 @@ import {
   useMediaQuery,
   useTheme,
   Badge,
+  CircularProgress,
 } from "@mui/material";
 import { FlightTakeoff, FilterList, Close } from "@mui/icons-material";
 
@@ -168,11 +169,59 @@ export function Search() {
     null
   );
 
+  // Infinite scroll state
+  const ITEMS_PER_PAGE = 20;
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
   const handleFilterChange = useCallback((filtered: FlightOffer[]) => {
     setFilteredOffers(filtered);
+    setVisibleCount(ITEMS_PER_PAGE); // Reset when filters change
   }, []);
 
-  const displayedOffers = filteredOffers ?? data?.offers ?? [];
+  // Reset visible count when data changes
+  useEffect(() => {
+    setVisibleCount(ITEMS_PER_PAGE);
+  }, [data]);
+
+  const allOffers = filteredOffers ?? data?.offers ?? [];
+  const displayedOffers = allOffers.slice(0, visibleCount);
+  const hasMoreOffers = visibleCount < allOffers.length;
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && hasMoreOffers && !isLoadingMore) {
+          setIsLoadingMore(true);
+          // Simulate loading delay for smoother UX
+          setTimeout(() => {
+            setVisibleCount((prev) =>
+              Math.min(prev + ITEMS_PER_PAGE, allOffers.length)
+            );
+            setIsLoadingMore(false);
+          }, 300);
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: "100px",
+      }
+    );
+
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [hasMoreOffers, isLoadingMore, allOffers.length]);
 
   const handleSearch = (values: SearchFormValues) => {
     if (!values.origin || !values.destination) return;
@@ -439,7 +488,7 @@ export function Search() {
                   ) : (
                     <>
                       <FlightHighlights
-                        offers={displayedOffers}
+                        offers={allOffers}
                         onSelect={(offer) => {
                           console.log("Selected highlighted offer:", offer);
                           // Scroll to the flight card or highlight it
@@ -474,6 +523,47 @@ export function Search() {
                           }}
                         />
                       ))}
+
+                      {/* Load more sentinel / indicator */}
+                      {hasMoreOffers && (
+                        <Box
+                          ref={loadMoreRef}
+                          sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            py: 3,
+                            gap: 1,
+                          }}
+                        >
+                          {isLoadingMore ? (
+                            <>
+                              <CircularProgress size={24} />
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                Loading more flights...
+                              </Typography>
+                            </>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              Scroll for more flights ({displayedOffers.length}{" "}
+                              of {allOffers.length})
+                            </Typography>
+                          )}
+                        </Box>
+                      )}
+
+                      {/* All loaded indicator */}
+                      {!hasMoreOffers && allOffers.length > ITEMS_PER_PAGE && (
+                        <Box sx={{ textAlign: "center", py: 2 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            All {allOffers.length} flights loaded
+                          </Typography>
+                        </Box>
+                      )}
                     </>
                   )}
                 </Grid>

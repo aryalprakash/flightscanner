@@ -1,14 +1,3 @@
-/**
- * FlightFilters Component
- *
- * Provides filtering options for flight search results:
- * - Stops (non-stop, 1 stop, 2+ stops)
- * - Airlines
- * - Price range
- * - Departure/Arrival times
- * - Duration
- */
-
 import { useState, useMemo, useCallback } from "react";
 import {
   Box,
@@ -34,10 +23,6 @@ import {
 } from "@mui/icons-material";
 import type { FlightOffer } from "@/api/types/flightOffer";
 
-// ============================================
-// TYPES
-// ============================================
-
 export interface FlightFiltersProps {
   offers: FlightOffer[];
   onFilterChange: (filteredOffers: FlightOffer[]) => void;
@@ -54,10 +39,6 @@ export interface FilterState {
   maxDuration: number; // in minutes
 }
 
-// ============================================
-// HELPERS
-// ============================================
-
 function getOutboundItinerary(offer: FlightOffer) {
   return (
     offer.itineraries.find((it) => it.direction === "outbound") ||
@@ -65,10 +46,6 @@ function getOutboundItinerary(offer: FlightOffer) {
   );
 }
 
-/**
- * Check if all itineraries meet the stops filter criteria
- * For round trips, both departure and return must satisfy the filter
- */
 function meetsStopsFilter(offer: FlightOffer, allowedStops: number[]): boolean {
   if (allowedStops.length === 0) return true;
 
@@ -124,10 +101,6 @@ function formatPrice(price: number): string {
   return `$${Math.round(price)}`;
 }
 
-// ============================================
-// FILTER SECTION COMPONENT
-// ============================================
-
 interface FilterSectionProps {
   title: string;
   icon: React.ReactNode;
@@ -175,10 +148,6 @@ function FilterSection({
     </Box>
   );
 }
-
-// ============================================
-// MAIN COMPONENT
-// ============================================
 
 export function FlightFilters({ offers, onFilterChange }: FlightFiltersProps) {
   // Calculate available filter options from offers
@@ -248,8 +217,8 @@ export function FlightFilters({ offers, onFilterChange }: FlightFiltersProps) {
 
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
-    stops: [], // Empty means all stops accepted
-    airlines: [], // Empty means all airlines accepted
+    stops: [],
+    airlines: [],
     priceRange: [filterOptions.minPrice, filterOptions.maxPrice],
     departureTimeRange: [0, 24],
     arrivalTimeRange: [0, 24],
@@ -260,7 +229,6 @@ export function FlightFilters({ offers, onFilterChange }: FlightFiltersProps) {
   const applyFilters = useCallback(
     (newFilters: FilterState) => {
       const filtered = offers.filter((offer) => {
-        // Filter by stops - checks both departure and return for round trips
         if (!meetsStopsFilter(offer, newFilters.stops)) {
           return false;
         }
@@ -489,7 +457,9 @@ export function FlightFilters({ offers, onFilterChange }: FlightFiltersProps) {
           icon={<Airlines fontSize="small" color="action" />}
           defaultExpanded={filterOptions.airlines.length <= 5}
         >
-          <FormGroup>
+          <FormGroup
+            sx={{ maxHeight: 300, overflowY: "auto", flexDirection: "row" }}
+          >
             {filterOptions.airlines.map((airline) => (
               <FormControlLabel
                 key={airline.code}
