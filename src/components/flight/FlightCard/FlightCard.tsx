@@ -445,11 +445,12 @@ export function FlightCard({ offer, onSelect }: FlightCardProps) {
 
   return (
     <Card
+      id={`flight-${offer.id}`}
       onClick={handleCardClick}
       sx={{
         mb: 2,
         cursor: "pointer",
-        transition: "box-shadow 0.2s",
+        transition: "all 0.3s ease",
         "&:hover": {
           boxShadow: 4,
         },
@@ -579,7 +580,8 @@ export function FlightCard({ offer, onSelect }: FlightCardProps) {
           sx={{
             display: "flex",
             justifyContent: "center",
-            mt: 1,
+            mt: 0,
+            mb: "-10px",
             color: "text.secondary",
           }}
         >

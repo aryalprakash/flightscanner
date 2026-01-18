@@ -19,7 +19,11 @@ import {
 import { FlightTakeoff, FilterList, Close } from "@mui/icons-material";
 
 import { useFlightSearch } from "@/hooks";
-import { FlightCard, FlightFilters } from "@/components/flight";
+import {
+  FlightCard,
+  FlightFilters,
+  FlightHighlights,
+} from "@/components/flight";
 import { SearchForm } from "@/components/forms/SearchForm";
 import { useLocationStore } from "@/store";
 import { getLocationByCode } from "@/api/services/locationService";
@@ -300,25 +304,9 @@ export function Search() {
           )}
         </Paper>
 
-        {/* Results Header with Mobile Filter Button */}
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-          sx={{ mb: 2 }}
-        >
-          <Typography variant="body2" color="text.secondary">
-            {isLoading
-              ? "Searching..."
-              : data
-              ? filteredOffers
-                ? `${displayedOffers.length} of ${data.meta.totalCount} flights`
-                : `${data.meta.totalCount} flights found`
-              : ""}
-          </Typography>
-
-          {/* Mobile Filter Button */}
-          {isMobile && data && data.offers.length > 0 && (
+        {/* Mobile Filter Button */}
+        {isMobile && data && data.offers.length > 0 && (
+          <Box sx={{ mb: 2 }}>
             <Button
               variant="outlined"
               size="small"
@@ -337,10 +325,13 @@ export function Search() {
               onClick={() => setFilterDrawerOpen(true)}
               sx={{ textTransform: "none" }}
             >
-              Filters
+              Filters{" "}
+              {filteredOffers
+                ? `(${displayedOffers.length} of ${data.meta.totalCount})`
+                : `(${data.meta.totalCount})`}
             </Button>
-          )}
-        </Stack>
+          </Box>
+        )}
 
         {/* Mobile Filter Drawer */}
         <Drawer
@@ -471,6 +462,8 @@ export function Search() {
                     <FlightFilters
                       offers={data.offers}
                       onFilterChange={handleFilterChange}
+                      filteredCount={displayedOffers.length}
+                      totalCount={data.meta.totalCount}
                     />
                   </Box>
                 </Grid>
@@ -485,42 +478,45 @@ export function Search() {
                       </Typography>
                     </Paper>
                   ) : (
-                    displayedOffers.map((offer) => (
-                      <FlightCard
-                        key={offer.id}
-                        offer={offer}
-                        onSelect={(selectedOffer) => {
-                          console.log("Selected offer:", selectedOffer);
-                          // TODO: Navigate to booking page
+                    <>
+                      {/* Highlighted Options - Best, Cheapest, Fastest */}
+                      <FlightHighlights
+                        offers={displayedOffers}
+                        onSelect={(offer) => {
+                          console.log("Selected highlighted offer:", offer);
+                          // Scroll to the flight card or highlight it
+                          const element = document.getElementById(
+                            `flight-${offer.id}`
+                          );
+                          if (element) {
+                            element.scrollIntoView({
+                              behavior: "smooth",
+                              block: "center",
+                            });
+                            element.style.boxShadow =
+                              "0 0 0 3px rgba(25, 118, 210, 0.5)";
+                            setTimeout(() => {
+                              element.style.boxShadow = "";
+                            }, 2000);
+                          }
                         }}
                       />
-                    ))
+                      {displayedOffers.map((offer) => (
+                        <FlightCard
+                          key={offer.id}
+                          offer={offer}
+                          onSelect={(selectedOffer) => {
+                            console.log("Selected offer:", selectedOffer);
+                            // TODO: Navigate to booking page
+                          }}
+                        />
+                      ))}
+                    </>
                   )}
                 </Grid>
               </Grid>
             )}
           </>
-        )}
-
-        {/* API Configuration Notice */}
-        {isError && error?.code === "CONFIG_ERROR" && (
-          <Alert severity="info" sx={{ mt: 2 }}>
-            <Typography variant="body2">
-              <strong>To enable real search results:</strong>
-            </Typography>
-            <ol style={{ margin: "8px 0 0 0", paddingLeft: "20px" }}>
-              <li>
-                Get API credentials from{" "}
-                <a
-                  href="https://developers.amadeus.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  developers.amadeus.com
-                </a>
-              </li>
-            </ol>
-          </Alert>
         )}
       </Container>
     </Box>

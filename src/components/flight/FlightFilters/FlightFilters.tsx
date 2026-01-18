@@ -41,6 +41,8 @@ import type { FlightOffer } from "@/api/types/flightOffer";
 export interface FlightFiltersProps {
   offers: FlightOffer[];
   onFilterChange: (filteredOffers: FlightOffer[]) => void;
+  filteredCount?: number;
+  totalCount?: number;
 }
 
 export interface FilterState {
@@ -178,7 +180,12 @@ function FilterSection({
 // MAIN COMPONENT
 // ============================================
 
-export function FlightFilters({ offers, onFilterChange }: FlightFiltersProps) {
+export function FlightFilters({
+  offers,
+  onFilterChange,
+  filteredCount,
+  totalCount,
+}: FlightFiltersProps) {
   // Calculate available filter options from offers
   const filterOptions = useMemo(() => {
     if (!offers.length) {
@@ -432,14 +439,16 @@ export function FlightFilters({ offers, onFilterChange }: FlightFiltersProps) {
             />
           )}
         </Box>
-        {activeFiltersCount > 0 && (
-          <Chip
-            label="Clear all"
-            size="small"
-            onClick={clearFilters}
-            sx={{ cursor: "pointer" }}
-          />
-        )}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {activeFiltersCount > 0 && (
+            <Chip
+              label="Clear all"
+              size="small"
+              onClick={clearFilters}
+              sx={{ cursor: "pointer" }}
+            />
+          )}
+        </Box>
       </Box>
 
       {/* Stops Filter */}
